@@ -30,8 +30,8 @@ def labeled_point_convert(spark_context, features, labels, categorical = False):
         temp.append(lbl_points)
     return spark_context.parallelize(temp) 
 
-conf = pyspark.SparkConf().setAppName('winequality').setMaster('local')
-spark_context = pyspark.SparkContext(conf = conf)
+config = pyspark.SparkConf().setAppName('winequality').setMaster('local')
+spark_context = pyspark.SparkContext(config = config)
 spark_sess = SparkSession(spark_context)
 
 data = spark_sess.read.format("csv").load("TrainingDataset.csv", header = True, sep =";")
@@ -52,7 +52,7 @@ dset = labeled_point_convert(spark_context, features, label)
 
 
 from sklearn.model_selection import train_test_split
-train, test = train_test_split(dset, test_size = 0.3)
+train, test = dset.randomSplit([0.7, 0.3], seed = 2)
 
 model = DecisionTree.trainClassifier(train, numClasses=10, categoricalFeaturesInfo={})
                                      
