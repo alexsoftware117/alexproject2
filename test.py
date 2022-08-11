@@ -44,9 +44,8 @@ valid = valid.withColumnRenamed('""""quality"""""', "label")
 features = np.array(valid.select(valid.columns[1:-1]).collect())
 label = np.array(valid.select('label').collect())
 
-vec_assembler = VectorAssembler(inputCols = val.columns[1:-1] , outputCol = 'features')
-data_tr = vec_assembler.transform(valid)
-data_tr = data_tr.select(['features','label'])
+vec_data = VectorAssembler(inputCols = val.columns[1:-1] , outputCol = 'features').transform(valid)
+vec_data = vec_data.select(['features','label'])
 
 dset = labeled_point_convert(spark_context, features, label)
 
@@ -61,11 +60,7 @@ label_pred = labels_preds.toDF(["label", "Prediction"])
 label_pred.show()
 label_pred_df = label_pred.toPandas()
 
-f1 = f1_score(label_pred_df['label'], label_pred_df['Prediction'], average='micro')
-print("Score for F1: ", f1)
-print(confusion_matrix(label_pred_df['label'],label_pred_df['Prediction']))
-print(classification_report(label_pred_df['label'],label_pred_df['Prediction']))
-print("Accuracy" , accuracy_score(label_pred_df['label'], label_pred_df['Prediction']))
+print("Score for F1: ", f1_score(label_pred_df['label'], label_pred_df['Prediction'], average='micro'))
 
 error_test = labels_preds.filter(
     lambda lp: lp[0] != lp[1]).count() / float(dataset.count())    
