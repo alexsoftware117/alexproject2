@@ -3,7 +3,7 @@ import findspark
 findspark.init()
 findspark.find()
 import pyspark
-from pyspark.mllib.tree import RandomForest, RandomForestModel
+from pyspark.mllib.tree import DecisionTree
 from pyspark.mllib.util import MLUtils
 from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
@@ -30,11 +30,11 @@ def labeled_point_convert(spark_context, feats, labels, categorical = False):
         temp.append(lbl_points)
     return spark_context.parallelize(temp) 
 
-config = pyspark.SparkConf().setAppName('winequality').setMaster('local')
-spark_context = pyspark.SparkContext(config = config)
+conf = pyspark.SparkConf().setAppName('winequality').setMaster('local')
+spark_context = pyspark.SparkContext(conf = conf)
 spark_sess = SparkSession(spark_context)
 
-data = spark.read.format("csv").load("TrainingDataset.csv", header = True, sep =";")
+data = spark_sess.read.format("csv").load("TrainingDataset.csv", header = True, sep =";")
 data.printSchema()
 data.show()
 
@@ -55,15 +55,13 @@ dset = labeled_point_convert(spark_context, feats, label)
 from sklearn.model_selection import train_test_split
 train, test = train_test_split(dset, test_size = 0.3)
 
-model = RandomForest.trainClassifier(train, numClasses=10, categoricalFeaturesInfo={},
-                                     numTrees=21, featureSubsetStrategy="auto",
-                                     impurity='gini', maxDepth=30, maxBins=32)
+model = DecisionTree.trainClassifier(train, numClasses=10, categoricalFeaturesInfo={})
                                      
 preds = model.predict(test.map(lambda l: l.feats))
 
 labels_preds = test.map(lambda lbl_point: lbl_point.label).zip(preds)
 
-labels_preds_df = pd.DataFrame(data = labels_preds)
+labels_preds_df = labels_preds.toDF()
 label_pred = labels_preds.toDF(["label", "Prediction"])
 label_pred.show()
 label_pred_df = label_pred.toPandas()

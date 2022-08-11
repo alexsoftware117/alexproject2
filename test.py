@@ -21,9 +21,9 @@ import numpy as np
 # Importing metric functions:
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
 
-def labeled_point_convert(spark_context, feats, labels, categorical = False):
+def labeled_point_convert(spark_context, features, labels, categorical = False):
     temp = []
-    for x, y in zip(feats, labels):        
+    for x, y in zip(features, labels):        
         lbl_points = LabeledPoint(y, x)
         temp.append(lbl_points)
     return spark_context.parallelize(temp)
@@ -41,22 +41,22 @@ for column_name in valid.columns[1:-1]+['""""quality"""""']:
     valid = valid.withColumn(column_name, col(column_name).cast('float'))
 valid = valid.withColumnRenamed('""""quality"""""', "label")
 
-feats = np.array(valid.select(valid.columns[1:-1]).collect())
+features = np.array(valid.select(valid.columns[1:-1]).collect())
 label = np.array(valid.select('label').collect())
 
 vec_assembler = VectorAssembler(inputCols = val.columns[1:-1] , outputCol = 'features')
 data_tr = vec_assembler.transform(valid)
 data_tr = data_tr.select(['features','label'])
 
-dset = labeled_point_convert(spark_context, feats, label)
+dset = labeled_point_convert(spark_context, features, label)
 
-model = RandomForestModel.load(spark_context, "/wineprediction/trainingmodel.model/")
+model = DecisionTreeModel.load(spark_context, "/wineprediction/trainingmodel.model/")
 
-preds = model.predict(dset.map(lambda l: l.feats))
+preds = model.predict(dset.map(lambda l: l.features))
 
 labels_preds = dset.map(lambda lp: lp.label).zip(preds)
 
-labels_preds_df = pd.DataFrame(data = labels_preds)
+labels_preds_df = labels_preds.toDF()
 label_pred = labels_preds.toDF(["label", "Prediction"])
 label_pred.show()
 label_pred_df = label_pred.toPandas()
